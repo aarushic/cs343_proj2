@@ -302,7 +302,8 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             if score > maxScore:
                 bestOutcome = action 
             maxScore = max(score, maxScore)
-        
+        if(bestOutcome == None):
+            return 
         return bestOutcome
 
     def expectimax(self, agentIndex, depth, state):
@@ -378,48 +379,72 @@ def betterEvaluationFunction(currentGameState: GameState):
 
     """
     "*** YOUR CODE HERE ***"
-    # Get useful information from the game state
-    pacmanPos = currentGameState.getPacmanPosition()
-    foodGrid = currentGameState.getFood()
-    ghostStates = currentGameState.getGhostStates()
-    capsulePositions = currentGameState.getCapsules()
-    
-    # Initialize score with the current game state's score
+    newPos = currentGameState.getPacmanPosition()
+    newFood = currentGameState.getFood()
+    newGhostStates = currentGameState.getGhostStates()
+    newCapsules= currentGameState.getCapsules()
+
     score = currentGameState.getScore()
     
-    # 1. Add the negative distance to the nearest food
-    foodList = foodGrid.asList()  # Convert food grid to a list of food positions
-    if foodList:
-        nearestFoodDist = min([manhattanDistance(pacmanPos, food) for food in foodList])
-        score += 1.0 / nearestFoodDist  # The closer Pacman is to food, the higher the score
-    
-    # 2. Add penalty for being too close to active ghosts, and bonus for being close to scared ghosts
-    for ghost in ghostStates:
-        ghostPos = ghost.getPosition()
-        ghostDist = manhattanDistance(pacmanPos, ghostPos)
-        if ghost.scaredTimer > 0:
-            # Ghost is scared, prioritize chasing it
-            score += 200 / (ghostDist + 1)  # Add bonus for being close to scared ghosts
-        else:
-            # Ghost is not scared, avoid it
-            if ghostDist > 0:
-                score -= 10 / ghostDist  # Subtract points for being close to active ghosts
-    
-    # 3. Add bonus for having fewer food pellets left
-    score += 10 * (currentGameState.getNumFood() - len(foodList))  # Fewer food left increases score
-
-    # 4. Add bonus for being close to power pellets (capsules)
-    if capsulePositions:
-        nearestCapsuleDist = min([manhattanDistance(pacmanPos, capsule) for capsule in capsulePositions])
-        score += 5.0 / nearestCapsuleDist  # Add small bonus for being close to power pellets
-
-    # 5. Consider the win and lose states (endgame situations)
+    #immediately return high score for a win
     if currentGameState.isWin():
-        return float('inf')  # Winning is the best state, so return maximum possible value
-    if currentGameState.isLose():
-        return float('-inf')  # Losing is the worst state, so return minimum possible value
+        return float('inf')
 
+   #prefer when pacman is closer to leftover food
+    minFoodDist = 1000000000000000
+    for food in newFood.asList():
+        currDist = util.manhattanDistance(newPos, food)
+        minFoodDist = min(currDist, minFoodDist)
+    score += 5 * 1/minFoodDist
+
+    #add heavy penalty for being close to a ghost (not scared) but increase score to promote chasing ghost when scared
+    for ghost in newGhostStates:
+        ghostPos = ghost.getPosition()
+        if(ghost.scaredTimer == 0):
+            currDist = util.manhattanDistance(newPos, ghostPos)
+            #return low score since this is a loss
+            if currDist == 0:
+                return float("-inf")
+            score -= 100 * 1/currDist
+        if(ghost.scaredTimer > 0):
+            currDist = util.manhattanDistance(newPos, ghostPos)
+            score += 10 * 1/currDist
+    
+    score += 2 * len(newFood.asList())
+    
     return score
+
+
+
+    # # 2. Add penalty for being too close to active ghosts, and bonus for being close to scared ghosts
+    # for ghost in newGhostPositions:
+    #     currDist = util.manhattanDistance(newPos, ghost)
+    #     if ghost.getGhostState().scaredTimer
+    
+    # for ghost in newGhostStates:
+    #     ghostPos = ghost.getPosition()
+    #     ghostDist = manhattanDistance(newPos, ghostPos)
+    #     if ghost.scaredTimer > 0:
+    #         # Ghost is scared, prioritize chasing it
+    #         score += 200 / (ghostDist + 1)  # Add bonus for being close to scared ghosts
+    #     else:
+    #         # Ghost is not scared, avoid it
+    #         if ghostDist > 0:
+    #             score -= 10 / ghostDist  # Subtract points for being close to active ghosts
+    
+    # # 3. Add bonus for having fewer food pellets left
+    # score += 10 * (currentGameState.getNumFood() - len(foodList))  # Fewer food left increases score
+
+    # # 4. Add bonus for being close to power pellets (capsules)
+    # if newCapsules:
+    #     nearestCapsuleDist = min([manhattanDistance(newPos, capsule) for capsule in newCapsules])
+    #     score += 5.0 / nearestCapsuleDist  # Add small bonus for being close to power pellets
+
+    # # 5. Consider the win and lose states (endgame situations)
+    # if currentGameState.isWin():
+    #     return float('inf')  # Winning is the best state, so return maximum possible value
+    # if currentGameState.isLose():
+    #     return float('-inf')  # Losing is the worst state, so return minimum possible value
 
 # Abbreviation
 better = betterEvaluationFunction
