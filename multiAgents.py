@@ -301,9 +301,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             score = self.expectimax(1, 0, gameState.generateSuccessor(0, action))
             if score > maxScore:
                 bestOutcome = action 
-            maxScore = max(score, maxScore)
-        if(bestOutcome == None):
-            return 
+                maxScore = max(score, maxScore)
         return bestOutcome
 
     def expectimax(self, agentIndex, depth, state):
@@ -348,32 +346,8 @@ def betterEvaluationFunction(currentGameState: GameState):
     evaluation function (question 5).
 
     DESCRIPTION: <write something here so we know what you did>
-
-    Explanation of the Components:
-    Distance to Food:
-
-    The function penalizes Pacman for being far from food. The closer Pacman is to food, the higher the score. This encourages Pacman to prioritize getting food quickly.
-    1.0 / nearestFoodDist is added to the score, so if Pacman is close to food, this term becomes larger.
-    Distance to Ghosts:
-
-    If ghosts are active (not scared), Pacman is penalized for being close to them. The closer Pacman is to an active ghost, the more the score is reduced.
-    If ghosts are scared (due to a power pellet), Pacman is rewarded for being close, because it can eat them for extra points.
-    Number of Food Pellets Remaining:
-
-    Pacman is rewarded as the number of food pellets left decreases, which incentivizes Pacman to clear the board quickly.
-    Distance to Power Pellets (Capsules):
-
-    Pacman is rewarded for being near power pellets, encouraging it to eat the power pellets to turn ghosts into edible targets.
-    Endgame States:
-
-    If Pacman reaches a winning state, the score is set to infinity to represent the best possible outcome.
-    If Pacman loses, the score is set to -infinity to represent the worst possible outcome.
-    Tuning and Testing:
-    You can adjust the weights of the different components (e.g., the multiplier for ghost distance or food distance) based on how Pacman performs during testing. You can run the autograder and analyze the results to see how well your agent performs, and tweak the evaluation function if needed.
-
-    How This Evaluation Function Works:
-    It balances different objectives: Pacman is incentivized to go after food, avoid dangerous ghosts, chase scared ghosts, and consume power pellets.
-    By combining these factors into a single score, Pacman can make more informed decisions about which game states are preferable.
+    The main factors we chose to focus on were distance to food, number of food pellets left, distance to ghosts, and chasing ghosts when they're scared.
+    We reward being close to left over food, having less food left over, being far from non scared ghosts, and being close to scared ghosts. 
 
 
 
@@ -382,69 +356,45 @@ def betterEvaluationFunction(currentGameState: GameState):
     newPos = currentGameState.getPacmanPosition()
     newFood = currentGameState.getFood()
     newGhostStates = currentGameState.getGhostStates()
-    newCapsules= currentGameState.getCapsules()
-
     score = currentGameState.getScore()
     
-    #immediately return high score for a win
-    if currentGameState.isWin():
-        return float('inf')
 
    #prefer when pacman is closer to leftover food
-    minFoodDist = 1000000000000000
+    minFoodDist = float('inf')
     for food in newFood.asList():
         currDist = util.manhattanDistance(newPos, food)
         minFoodDist = min(currDist, minFoodDist)
-    score += 5 * 1/minFoodDist
+    #extra points for eating food
+    if(minFoodDist == 0):
+        score += 10
+    else:
+        score += 1/minFoodDist
 
-    #add heavy penalty for being close to a ghost (not scared) but increase score to promote chasing ghost when scared
+    #prefer when more food is eaten
+    score -= len(newFood.asList())
+
+
     for ghost in newGhostStates:
         ghostPos = ghost.getPosition()
+        #penalty for being close to a regular ghost
         if(ghost.scaredTimer == 0):
             currDist = util.manhattanDistance(newPos, ghostPos)
-            #return low score since this is a loss
+            #this is a loss
             if currDist == 0:
                 return float("-inf")
-            score -= 100 * 1/currDist
+            score -= 1/currDist
+
+    
+        #reward for eating a scared ghost
         if(ghost.scaredTimer > 0):
             currDist = util.manhattanDistance(newPos, ghostPos)
-            score += 10 * 1/currDist
-    
-    score += 2 * len(newFood.asList())
+            #promotes chasing ghosts until eaten
+            if(currDist == 0):
+                score += 10
+            else:
+                score += 1/currDist
     
     return score
-
-
-
-    # # 2. Add penalty for being too close to active ghosts, and bonus for being close to scared ghosts
-    # for ghost in newGhostPositions:
-    #     currDist = util.manhattanDistance(newPos, ghost)
-    #     if ghost.getGhostState().scaredTimer
-    
-    # for ghost in newGhostStates:
-    #     ghostPos = ghost.getPosition()
-    #     ghostDist = manhattanDistance(newPos, ghostPos)
-    #     if ghost.scaredTimer > 0:
-    #         # Ghost is scared, prioritize chasing it
-    #         score += 200 / (ghostDist + 1)  # Add bonus for being close to scared ghosts
-    #     else:
-    #         # Ghost is not scared, avoid it
-    #         if ghostDist > 0:
-    #             score -= 10 / ghostDist  # Subtract points for being close to active ghosts
-    
-    # # 3. Add bonus for having fewer food pellets left
-    # score += 10 * (currentGameState.getNumFood() - len(foodList))  # Fewer food left increases score
-
-    # # 4. Add bonus for being close to power pellets (capsules)
-    # if newCapsules:
-    #     nearestCapsuleDist = min([manhattanDistance(newPos, capsule) for capsule in newCapsules])
-    #     score += 5.0 / nearestCapsuleDist  # Add small bonus for being close to power pellets
-
-    # # 5. Consider the win and lose states (endgame situations)
-    # if currentGameState.isWin():
-    #     return float('inf')  # Winning is the best state, so return maximum possible value
-    # if currentGameState.isLose():
-    #     return float('-inf')  # Losing is the worst state, so return minimum possible value
 
 # Abbreviation
 better = betterEvaluationFunction
