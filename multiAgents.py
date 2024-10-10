@@ -358,21 +358,18 @@ def betterEvaluationFunction(currentGameState: GameState):
     newGhostStates = currentGameState.getGhostStates()
     score = currentGameState.getScore()
     
-
    #prefer when pacman is closer to leftover food
     minFoodDist = float('inf')
     for food in newFood.asList():
         currDist = util.manhattanDistance(newPos, food)
         minFoodDist = min(currDist, minFoodDist)
     #extra points for eating food
-    if(minFoodDist == 0):
-        score += 10
-    else:
-        score += 1/minFoodDist
+    if minFoodDist > 0:
+        score += 1 / minFoodDist
+
 
     #prefer when more food is eaten
     score -= len(newFood.asList())
-
 
     for ghost in newGhostStates:
         ghostPos = ghost.getPosition()
@@ -383,7 +380,6 @@ def betterEvaluationFunction(currentGameState: GameState):
             if currDist == 0:
                 return float("-inf")
             score -= 1/currDist
-
     
         #reward for eating a scared ghost
         if(ghost.scaredTimer > 0):
